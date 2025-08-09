@@ -33,7 +33,7 @@ spec:
         fsGroup: 1001
       containers:
       - name: bmi-calculator
-        image: bmi-calculator:latest
+        image: ghcr.io/dannyyy/bmi_is/bmi-calculator:latest
         imagePullPolicy: Always
         ports:
         - name: http
