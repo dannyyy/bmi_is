@@ -1,0 +1,43 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Calculator with Measuring Tape Icon -->
+  <defs>
+    <linearGradient id="calcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="100%" style="stop-color:#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="tapeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B"/>
+      <stop offset="100%" style="stop-color:#D97706"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Calculator body -->
+  <rect x="8" y="4" width="16" height="20" rx="2" fill="url(#calcGrad)"/>
+  
+  <!-- Calculator screen -->
+  <rect x="10" y="6" width="12" height="4" rx="1" fill="white" opacity="0.9"/>
+  
+  <!-- Calculator buttons -->
+  <circle cx="11.5" cy="13" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="16" cy="13" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="20.5" cy="13" r="1.2" fill="white" opacity="0.7"/>
+  
+  <circle cx="11.5" cy="16.5" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="16" cy="16.5" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="20.5" cy="16.5" r="1.2" fill="white" opacity="0.7"/>
+  
+  <circle cx="11.5" cy="20" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="16" cy="20" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="20.5" cy="20" r="1.2" fill="white" opacity="0.7"/>
+  
+  <!-- Measuring tape -->
+  <path d="M2 16 Q4 14 8 16 T14 16" stroke="url(#tapeGrad)" stroke-width="2" fill="none"/>
+  <path d="M14 16 Q18 18 22 16 T30 16" stroke="url(#tapeGrad)" stroke-width="2" fill="none"/>
+  
+  <!-- Tape markings -->
+  <line x1="6" y1="15" x2="6" y2="17" stroke="url(#tapeGrad)" stroke-width="1"/>
+  <line x1="10" y1="15" x2="10" y2="17" stroke="url(#tapeGrad)" stroke-width="1"/>
+  <line x1="18" y1="15" x2="18" y2="17" stroke="url(#tapeGrad)" stroke-width="1"/>
+  <line x1="22" y1="15" x2="22" y2="17" stroke="url(#tapeGrad)" stroke-width="1"/>
+  <line x1="26" y1="15" x2="26" y2="17" stroke="url(#tapeGrad)" stroke-width="1"/>
+</svg>
