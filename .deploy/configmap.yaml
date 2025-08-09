@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bmi-calculator-config
+  namespace: bmi
+  labels:
+    app: bmi-calculator
+data:
+  app-name: "BMI Calculator"
+  app-version: "1.0.0"
+  node-env: "production"
+  # Add additional configuration as needed
+  max-request-size: "10mb"
+  timeout: "30s"

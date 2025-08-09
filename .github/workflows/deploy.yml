@@ -1,0 +1,185 @@
+name: Build and Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/bmi-calculator
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install --frozen-lockfile
+
+    - name: Build application
+      run: bun run build
+
+    - name: Test build output
+      run: |
+        if [ ! -d ".output" ]; then
+          echo "Build output directory not found"
+          exit 1
+        fi
+        if [ ! -f ".output/server/index.mjs" ]; then
+          echo "Server index file not found"
+          exit 1
+        fi
+        echo "Build successful"
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Output image
+      id: image
+      run: |
+        echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+
+    - name: Verify cluster connection
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+
+    - name: Create namespace
+      run: |
+        kubectl create namespace bmi --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Update deployment image
+      run: |
+        # Update the image in deployment.yaml
+        sed -i "s|image: bmi-calculator:latest|image: ${{ needs.build.outputs.image }}|g" .deploy/deployment.yaml
+        
+        # Update version in configmap
+        sed -i "s|app-version: \"1.0.0\"|app-version: \"${{ github.sha }}\"|g" .deploy/configmap.yaml
+
+    - name: Deploy ConfigMap
+      run: |
+        kubectl apply -f .deploy/configmap.yaml -n bmi
+
+    - name: Deploy Service
+      run: |
+        kubectl apply -f .deploy/service.yaml -n bmi
+
+    - name: Deploy HPA
+      run: |
+        kubectl apply -f .deploy/hpa.yaml -n bmi
+
+    - name: Deploy Application
+      run: |
+        kubectl apply -f .deploy/deployment.yaml -n bmi
+
+    - name: Deploy Ingress Route
+      run: |
+        kubectl apply -f .deploy/ingressroute.yaml -n bmi
+
+    - name: Wait for deployment rollout
+      run: |
+        kubectl rollout status deployment/bmi-calculator -n bmi --timeout=300s
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -l app=bmi-calculator -n bmi
+        kubectl get service bmi-calculator-service -n bmi
+        kubectl get ingressroute bmi-calculator-secure -n bmi
+
+    - name: Run health check
+      run: |
+        # Wait a bit for the service to be ready
+        sleep 30
+        
+        # Get service endpoint and test health
+        SERVICE_IP=$(kubectl get service bmi-calculator-service -n bmi -o jsonpath='{.spec.clusterIP}')
+        kubectl run test-health --image=curlimages/curl --rm -i --restart=Never -n bmi -- \
+          curl -f http://$SERVICE_IP/api/health || exit 1
+
+  cleanup:
+    name: Cleanup old images
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+    - name: Delete old container images
+      uses: actions/delete-package-versions@v4
+      with:
+        package-name: ${{ env.IMAGE_NAME }}
+        package-type: 'container'
+        min-versions-to-keep: 5
+        delete-only-untagged-versions: 'true'
