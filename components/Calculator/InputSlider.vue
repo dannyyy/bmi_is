@@ -26,8 +26,8 @@
       
       <!-- Progress bar -->
       <div
-        class="absolute top-0 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg pointer-events-none"
-        :style="{ width: progressWidth }"
+        class="absolute left-0 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg pointer-events-none z-0"
+        :style="{ width: progressWidth, top: '9.5px' }"
       ></div>
     </div>
     
