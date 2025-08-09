@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Custom slider styles */
+  .slider-input {
+    @apply w-full h-2 bg-gray-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer transition-colors;
+  }
+  
+  .slider-input::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 bg-blue-600 dark:bg-blue-500 rounded-full cursor-pointer shadow-lg transition-colors;
+    -webkit-appearance: none;
+  }
+  
+  .slider-input::-moz-range-thumb {
+    @apply w-5 h-5 bg-blue-600 dark:bg-blue-500 rounded-full cursor-pointer border-0 shadow-lg transition-colors;
+  }
+  
+  .slider-input:focus {
+    @apply outline-none ring-2 ring-blue-500 dark:ring-blue-400 ring-opacity-50;
+  }
+  
+  .slider-input::-webkit-slider-thumb:hover {
+    @apply bg-blue-700 dark:bg-blue-400 shadow-xl;
+  }
+  
+  /* Card hover effects */
+  .hover-lift {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-slate-500 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600 dark:bg-slate-400;
+}
