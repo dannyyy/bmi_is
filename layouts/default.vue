@@ -4,19 +4,7 @@
     <header class="bg-white/80 dark:bg-slate-800/90 backdrop-blur-sm border-b border-gray-200 dark:border-gray-600 sticky top-0 z-50 transition-colors duration-300">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                </path>
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-xl font-bold text-gray-900 dark:text-white transition-colors">BMI Calculator</h1>
-              <p class="text-sm text-gray-600 dark:text-gray-300 transition-colors">Professional Health Tool</p>
-            </div>
-          </div>
+          <UIAppIcon />
           
           <div class="flex items-center space-x-6">
             <nav class="hidden md:flex space-x-8">

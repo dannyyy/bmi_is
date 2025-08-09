@@ -17,7 +17,7 @@
           v-model="weight"
           :min="30"
           :max="200"
-          :step="0.1"
+          :step="0.5"
           unit=" kg"
         />
       </UICard>
