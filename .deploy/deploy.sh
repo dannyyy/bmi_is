@@ -39,12 +39,34 @@ ensure_namespace() {
     echo "✅ Namespace $NAMESPACE ready"
 }
 
+# Function to validate deployment YAML
+validate_deployment_yaml() {
+    echo "🔍 Validating deployment.yaml format..."
+    if ! grep -q "image: ghcr.io/dannyyy/bmi_is/bmi-calculator" "$SCRIPT_DIR/deployment.yaml"; then
+        echo "❌ Unexpected deployment.yaml format - missing expected image reference"
+        exit 1
+    fi
+    echo "✅ Deployment YAML validation passed"
+}
+
 # Function to update image tags in deployment
 update_image() {
     echo "🏷️  Updating image tag to $IMAGE_TAG..."
     local temp_file=$(mktemp)
-    sed "s|image: bmi-calculator:latest|image: ghcr.io/dannyyy/bmi_is/bmi-calculator:$IMAGE_TAG|g" "$SCRIPT_DIR/deployment.yaml" > "$temp_file"
+    # Update the image tag regardless of current tag
+    sed "s|image: ghcr.io/dannyyy/bmi_is/bmi-calculator:.*|image: ghcr.io/dannyyy/bmi_is/bmi-calculator:$IMAGE_TAG|g" "$SCRIPT_DIR/deployment.yaml" > "$temp_file"
+    
     mv "$temp_file" "$SCRIPT_DIR/deployment.yaml.tmp"
+}
+
+# Function to force rolling restart for latest tag using kubectl patch
+force_rolling_restart() {
+    if [ "$IMAGE_TAG" = "latest" ]; then
+        echo "🔄 Forcing rolling restart to pull latest image..."
+        local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        kubectl patch deployment bmi-calculator -n "$NAMESPACE" \
+            -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$timestamp\"}}}}}"
+    fi
 }
 
 # Function to deploy resources
@@ -81,10 +103,13 @@ wait_for_deployment() {
 verify_deployment() {
     echo "🔍 Verifying deployment..."
     
-    echo "📦 Pods:"
-    kubectl get pods -l app=bmi-calculator -n "$NAMESPACE"
+    echo "📦 Pods with Image Info:"
+    kubectl get pods -l app=bmi-calculator -n "$NAMESPACE" -o custom-columns="NAME:.metadata.name,STATUS:.status.phase,IMAGE:.spec.containers[0].image,STARTED:.status.startTime"
     
     echo ""
+    echo "🔍 Pod Image Digests (to verify latest images):"
+    kubectl get pods -l app=bmi-calculator -n "$NAMESPACE" -o jsonpath='{range .items[*]}{"Pod: "}{.metadata.name}{"\n"}{"Image: "}{.spec.containers[0].image}{"\n"}{"ImageID: "}{.status.containerStatuses[0].imageID}{"\n\n"}{end}' 2>/dev/null || echo "Pods may still be starting..."
+    
     echo "🌐 Service:"
     kubectl get service bmi-calculator-service -n "$NAMESPACE"
     
@@ -127,11 +152,14 @@ main() {
     check_cluster
     ensure_namespace
     
-    if [ "$IMAGE_TAG" != "latest" ]; then
-        update_image
-    fi
+    # Validate deployment YAML format
+    validate_deployment_yaml
+    
+    # Always update image tag in deployment
+    update_image
     
     deploy_resources
+    force_rolling_restart
     wait_for_deployment
     verify_deployment
     health_check

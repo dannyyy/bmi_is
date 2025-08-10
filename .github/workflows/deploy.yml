@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - '.deploy/**'
+      - 'docs/**'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - '.deploy/**'
+      - 'docs/**'
 
 env:
   REGISTRY: ghcr.io
