@@ -39,6 +39,16 @@ ensure_namespace() {
     echo "✅ Namespace $NAMESPACE ready"
 }
 
+# Function to validate deployment YAML
+validate_deployment_yaml() {
+    echo "🔍 Validating deployment.yaml format..."
+    if ! grep -q "image: ghcr.io/dannyyy/bmi_is/bmi-calculator" "$SCRIPT_DIR/deployment.yaml"; then
+        echo "❌ Unexpected deployment.yaml format - missing expected image reference"
+        exit 1
+    fi
+    echo "✅ Deployment YAML validation passed"
+}
+
 # Function to update image tags in deployment
 update_image() {
     echo "🏷️  Updating image tag to $IMAGE_TAG..."
@@ -46,28 +56,16 @@ update_image() {
     # Update the image tag regardless of current tag
     sed "s|image: ghcr.io/dannyyy/bmi_is/bmi-calculator:.*|image: ghcr.io/dannyyy/bmi_is/bmi-calculator:$IMAGE_TAG|g" "$SCRIPT_DIR/deployment.yaml" > "$temp_file"
     
-    # Add timestamp annotation to force rolling update for latest tag
-    if [ "$IMAGE_TAG" = "latest" ]; then
-        echo "⏰ Adding timestamp annotation to force rolling update..."
-        local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        awk -v ts="$timestamp" '
-        /annotations:/ { 
-            print $0
-            print "        kubectl.kubernetes.io/restartedAt: \"" ts "\""
-            next
-        }
-        { print }
-        ' "$temp_file" > "$temp_file.tmp" && mv "$temp_file.tmp" "$temp_file"
-    fi
-    
     mv "$temp_file" "$SCRIPT_DIR/deployment.yaml.tmp"
 }
 
-# Function to force rolling restart for latest tag
+# Function to force rolling restart for latest tag using kubectl patch
 force_rolling_restart() {
     if [ "$IMAGE_TAG" = "latest" ]; then
         echo "🔄 Forcing rolling restart to pull latest image..."
-        kubectl rollout restart deployment/bmi-calculator -n "$NAMESPACE"
+        local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        kubectl patch deployment bmi-calculator -n "$NAMESPACE" \
+            -p '{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"'$timestamp'"}}}}'
     fi
 }
 
@@ -89,9 +87,6 @@ deploy_resources() {
     else
         kubectl apply -f "$SCRIPT_DIR/deployment.yaml" -n "$NAMESPACE"
     fi
-    
-    # Force rolling restart for latest tag to ensure new image is pulled
-    force_rolling_restart
     
     echo "🌍 Deploying Ingress Route..."
     kubectl apply -f "$SCRIPT_DIR/ingressroute.yaml" -n "$NAMESPACE"
@@ -157,10 +152,14 @@ main() {
     check_cluster
     ensure_namespace
     
+    # Validate deployment YAML format
+    validate_deployment_yaml
+    
     # Always update image tag in deployment
     update_image
     
     deploy_resources
+    force_rolling_restart
     wait_for_deployment
     verify_deployment
     health_check
