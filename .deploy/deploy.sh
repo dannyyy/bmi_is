@@ -65,7 +65,7 @@ force_rolling_restart() {
         echo "🔄 Forcing rolling restart to pull latest image..."
         local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
         kubectl patch deployment bmi-calculator -n "$NAMESPACE" \
-            -p '{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"'$timestamp'"}}}}'
+            -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$timestamp\"}}}}}"
     fi
 }
 
